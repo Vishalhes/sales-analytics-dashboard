@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sales Analytics Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1e2d47;
+    --accent: #f59e0b;
+    --accent2: #10b981;
+    --accent3: #6366f1;
+    --accent4: #ef4444;
+    --text: #f0f4ff;
+    --muted: #6b7db3;
+    --card: #131e30;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Mono',monospace; min-height:100vh; }
+
+  /* HEADER */
+  .header {
+    padding: 18px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg, #0a0e1a 0%, #0d1626 100%);
+    position: sticky; top:0; z-index:100;
+  }
+  .header-brand { display:flex; align-items:center; gap:12px; }
+  .header-logo {
+    width:36px; height:36px; border-radius:8px;
+    background: linear-gradient(135deg, var(--accent), #ff6b35);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Syne',sans-serif; font-weight:800; font-size:16px; color:#000;
+  }
+  .header-title { font-family:'Syne',sans-serif; font-weight:700; font-size:18px; letter-spacing:.5px; }
+  .header-sub { font-size:11px; color:var(--muted); margin-top:1px; }
+  .header-right { display:flex; align-items:center; gap:14px; }
+
+  /* UPLOAD ZONE */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius:10px; padding:8px 16px;
+    display:flex; align-items:center; gap:8px;
+    cursor:pointer; transition:.2s;
+    font-size:12px; color:var(--muted);
+  }
+  .upload-zone:hover { border-color:var(--accent); color:var(--accent); }
+  .upload-zone input { display:none; }
+
+  /* BRAND FILTER */
+  .brand-filter-bar {
+    display:flex; align-items:center; gap:10px;
+    padding: 12px 28px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x:auto; flex-wrap:wrap;
+  }
+  .brand-label { font-size:11px; color:var(--muted); font-weight:500; white-space:nowrap; }
+  .brand-chip {
+    padding:5px 14px; border-radius:20px; border:1px solid var(--border);
+    background:transparent; color:var(--muted); font-family:'DM Mono',monospace;
+    font-size:11px; cursor:pointer; transition:.2s; white-space:nowrap;
+  }
+  .brand-chip:hover { border-color:var(--accent); color:var(--accent); }
+  .brand-chip.active { background:var(--accent); border-color:var(--accent); color:#000; font-weight:500; }
+
+  /* PERIOD TABS */
+  .period-tabs {
+    display:flex; gap:0; border-bottom: 1px solid var(--border);
+    padding: 0 28px; background:var(--bg);
+  }
+  .period-tab {
+    padding:12px 22px; font-family:'Syne',sans-serif; font-size:13px;
+    font-weight:600; cursor:pointer; border-bottom:2px solid transparent;
+    color:var(--muted); transition:.2s; letter-spacing:.5px;
+  }
+  .period-tab:hover { color:var(--text); }
+  .period-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+  /* MAIN */
+  .main { padding:20px 28px; }
+
+  /* KPI CARDS */
+  .kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:22px; }
+  .kpi-card {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; padding:18px 20px; position:relative; overflow:hidden;
+  }
+  .kpi-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  }
+  .kpi-card.k1::before { background:var(--accent); }
+  .kpi-card.k2::before { background:var(--accent2); }
+  .kpi-card.k3::before { background:var(--accent3); }
+  .kpi-card.k4::before { background:var(--accent4); }
+  .kpi-card.k5::before { background:#ec4899; }
+  .kpi-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+  .kpi-value { font-family:'Syne',sans-serif; font-weight:800; font-size:22px; }
+  .kpi-value.k1 { color:var(--accent); }
+  .kpi-value.k2 { color:var(--accent2); }
+  .kpi-value.k3 { color:var(--accent3); }
+  .kpi-value.k4 { color:var(--accent4); }
+  .kpi-value.k5 { color:#ec4899; }
+  .kpi-sub { font-size:10px; color:var(--muted); margin-top:4px; }
+
+  /* GRID LAYOUT */
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
+  .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:18px; }
+  @media(max-width:900px) { .grid2,.grid3 { grid-template-columns:1fr; } }
+
+  /* PANEL */
+  .panel {
+    background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden;
+  }
+  .panel-header {
+    padding:14px 18px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border);
+    background:var(--surface2);
+  }
+  .panel-title { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; letter-spacing:.3px; }
+  .panel-badge { font-size:10px; background:var(--border); padding:3px 8px; border-radius:10px; color:var(--muted); }
+  .panel-body { padding:16px 18px; }
+
+  /* TABLE */
+  .data-table { width:100%; border-collapse:collapse; font-size:11.5px; }
+  .data-table th {
+    text-align:left; padding:8px 10px; color:var(--muted);
+    border-bottom:1px solid var(--border); font-size:10px;
+    text-transform:uppercase; letter-spacing:.8px; font-weight:500;
+  }
+  .data-table td { padding:9px 10px; border-bottom:1px solid rgba(30,45,71,.5); }
+  .data-table tr:last-child td { border-bottom:none; }
+  .data-table tr:hover td { background:rgba(255,255,255,.02); }
+  .data-table td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .data-table td.name { font-weight:500; color:var(--text); max-width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; }
+  .pill-green { background:rgba(16,185,129,.15); color:var(--accent2); }
+  .pill-red { background:rgba(239,68,68,.15); color:var(--accent4); }
+  .pill-yellow { background:rgba(245,158,11,.15); color:var(--accent); }
+
+  /* BAR CHART */
+  .bar-chart { display:flex; flex-direction:column; gap:8px; }
+  .bar-row { display:flex; align-items:center; gap:10px; }
+  .bar-row-label { font-size:11px; color:var(--muted); min-width:110px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bar-track { flex:1; background:var(--border); border-radius:3px; height:8px; }
+  .bar-fill { height:100%; border-radius:3px; transition:width .6s cubic-bezier(.4,0,.2,1); }
+  .bar-row-val { font-size:11px; color:var(--text); min-width:70px; text-align:right; font-variant-numeric:tabular-nums; }
+
+  /* DONUT CHART */
+  .donut-wrap { display:flex; align-items:center; gap:20px; }
+  .donut-svg { flex-shrink:0; }
+  .donut-legend { display:flex; flex-direction:column; gap:8px; flex:1; }
+  .legend-item { display:flex; align-items:center; gap:8px; font-size:11px; }
+  .legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .legend-name { color:var(--muted); flex:1; }
+  .legend-pct { color:var(--text); font-weight:500; }
+
+  /* IMPORT NOTICE */
+  .import-notice {
+    text-align:center; padding:40px 20px; color:var(--muted);
+  }
+  .import-notice .big { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--border); margin-bottom:10px; }
+  .import-notice p { font-size:12px; }
+  .import-btn {
+    margin-top:16px; padding:10px 24px; background:var(--accent);
+    color:#000; border:none; border-radius:8px; font-family:'Syne',sans-serif;
+    font-weight:700; font-size:13px; cursor:pointer;
+  }
+  .import-btn:hover { opacity:.85; }
+
+  /* MONTH PILLS */
+  .month-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .month-chip {
+    padding:4px 12px; border-radius:14px; font-size:11px;
+    border:1px solid var(--border); cursor:pointer;
+    color:var(--muted); background:transparent; transition:.15s;
+    font-family:'DM Mono',monospace;
+  }
+  .month-chip.active { background:var(--accent3); border-color:var(--accent3); color:#fff; }
+
+  /* TREND LINE (mini sparkline area) */
+  .sparkline-wrap { height:60px; position:relative; margin-top:8px; }
+  .sparkline-wrap svg { width:100%; height:100%; }
+
+  .empty-state { text-align:center; padding:30px; color:var(--muted); font-size:12px; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width:5px; height:5px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-brand">
+    <div class="header-logo">S</div>
+    <div>
+      <div class="header-title">Sales Analytics</div>
+      <div class="header-sub">Multi-Brand Distribution Dashboard</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <label class="upload-zone">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      Upload Excel / CSV
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls"/>
+    </label>
+    <div id="dataStatus" style="font-size:11px;color:var(--muted);">No data loaded</div>
+  </div>
+</div>
+
+<!-- BRAND FILTER -->
+<div class="brand-filter-bar" id="brandBar">
+  <span class="brand-label">BRAND:</span>
+  <button class="brand-chip active" data-brand="ALL" onclick="selectBrand(this,'ALL')">ALL BRANDS</button>
+</div>
+
+<!-- PERIOD TABS -->
+<div class="period-tabs">
+  <div class="period-tab active" onclick="selectPeriod(this,'MTD')">MTD <span style="font-size:10px;opacity:.5">(Current Month)</span></div>
+  <div class="period-tab" onclick="selectPeriod(this,'LMTD')">LMTD <span style="font-size:10px;opacity:.5">(Last Month)</span></div>
+  <div class="period-tab" onclick="selectPeriod(this,'FTD')">FTD <span style="font-size:10px;opacity:.5">(Full Till Date)</span></div>
+  <div class="period-tab" onclick="selectPeriod(this,'ALL')">ALL DATA</div>
+</div>
+
+<!-- MONTH ROW -->
+<div style="padding:12px 28px 0; background:var(--bg);">
+  <div class="month-row" id="monthRow"></div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main" id="mainContent">
+  <div class="import-notice" id="importNotice">
+    <div class="big">📊</div>
+    <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--muted);margin-bottom:8px;">Apna Data Upload Karo</div>
+    <p>Excel ya CSV file upload karo jisme Date, Month, BUCKET, Party Name,<br/>Description of Goods, Brand Name, Quantity, Sale Amount, Profit, Disc. Amount ho</p>
+    <button class="import-btn" onclick="document.getElementById('fileInput').click()">📁 Upload File</button>
+    <div style="margin-top:20px;">
+      <button class="import-btn" style="background:var(--accent3);font-size:12px;" onclick="loadSampleData()">🧪 Demo Data Load Karo</button>
+    </div>
+  </div>
+
+  <div id="dashboardContent" style="display:none;">
+    <!-- KPIs -->
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <!-- Row 1: Party Table + Product Table -->
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">🏪 Party-wise Sale</span>
+          <span class="panel-badge" id="partyCount">0 parties</span>
+        </div>
+        <div class="panel-body" style="overflow-x:auto;max-height:320px;overflow-y:auto;">
+          <table class="data-table" id="partyTable">
+            <thead><tr>
+              <th>Party Name</th>
+              <th style="text-align:right">Qty</th>
+              <th style="text-align:right">Sale ₹</th>
+              <th style="text-align:right">Profit ₹</th>
+              <th style="text-align:right">Disc ₹</th>
+              <th style="text-align:right">Margin%</th>
+            </tr></thead>
+            <tbody id="partyBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">📦 Product-wise Sale</span>
+          <span class="panel-badge" id="prodCount">0 products</span>
+        </div>
+        <div class="panel-body" style="overflow-x:auto;max-height:320px;overflow-y:auto;">
+          <table class="data-table" id="prodTable">
+            <thead><tr>
+              <th>Product</th>
+              <th style="text-align:right">Qty</th>
+              <th style="text-align:right">Sale ₹</th>
+              <th style="text-align:right">Profit ₹</th>
+              <th style="text-align:right">Disc ₹</th>
+              <th style="text-align:right">Margin%</th>
+            </tr></thead>
+            <tbody id="prodBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Party Bar + Discount Panel -->
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">📈 Top 8 Parties by Sale</span>
+        </div>
+        <div class="panel-body">
+          <div class="bar-chart" id="partyBarChart"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">🏷️ Brand Sales Distribution</span>
+        </div>
+        <div class="panel-body">
+          <div class="donut-wrap">
+            <svg class="donut-svg" width="120" height="120" viewBox="0 0 120 120" id="donutSvg">
+              <circle cx="60" cy="60" r="45" fill="none" stroke="var(--border)" stroke-width="18"/>
+            </svg>
+            <div class="donut-legend" id="donutLegend"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Profit Bar + Category/Bucket Panel -->
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">💰 Top Products by Profit</span>
+        </div>
+        <div class="panel-body">
+          <div class="bar-chart" id="profitBarChart"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">📊 Bucket / Category Split</span>
+        </div>
+        <div class="panel-body">
+          <table class="data-table" id="bucketTable">
+            <thead><tr>
+              <th>Bucket</th>
+              <th style="text-align:right">Qty</th>
+              <th style="text-align:right">Sale ₹</th>
+              <th style="text-align:right">Profit ₹</th>
+              <th style="text-align:right">Margin%</th>
+            </tr></thead>
+            <tbody id="bucketBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: Full raw table -->
+    <div class="panel" style="margin-bottom:28px;">
+      <div class="panel-header">
+        <span class="panel-title">🗂️ Full Transaction Detail</span>
+        <span class="panel-badge" id="rowCount">0 rows</span>
+      </div>
+      <div style="overflow-x:auto;max-height:340px;overflow-y:auto;">
+        <table class="data-table" id="rawTable">
+          <thead id="rawHead"></thead>
+          <tbody id="rawBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────
+let allData = [];
+let filteredData = [];
+let currentPeriod = 'MTD';
+let currentBrand = 'ALL';
+let currentMonth = 'ALL';
+
+// Column name mapping (flexible)
+const COL = {
+  date: ['date','Date','DATE'],
+  month: ['month','Month','MONTH'],
+  bucket: ['bucket','Bucket','BUCKET','BKT'],
+  party: ['party name','Party Name','PARTY NAME','party','Party'],
+  product: ['description of goods','Description of Goods','DESC','description','Product'],
+  brand: ['brand name','Brand Name','BRAND NAME','brand','Brand'],
+  qty: ['quantity','Quantity','QTY','qty'],
+  saleAmt: ['total sale amoun','total sale amount','Total Sale Amount','sale amount','Sale Amount','amount','Amount'],
+  profit: ['profit amount','Profit Amount','PROFIT','profit','Profit'],
+  disc: ['disc. amount','Disc. Amount','DISC AMT','discount','disc amt','Disc.Amt','Disc. Amt'],
+  margin: ['profit %','Profit %','MARGIN','margin %','SS Margin%'],
+};
+
+function findCol(headers, keys) {
+  for (const k of keys) {
+    const found = headers.find(h => h && h.toString().toLowerCase().trim() === k.toLowerCase());
+    if (found) return found;
+  }
+  // partial match
+  for (const k of keys) {
+    const found = headers.find(h => h && h.toString().toLowerCase().includes(k.toLowerCase().split(' ')[0]));
+    if (found) return found;
+  }
+  return null;
+}
+
+let colMap = {};
+
+function mapColumns(headers) {
+  colMap = {};
+  for (const [key, aliases] of Object.entries(COL)) {
+    colMap[key] = findCol(headers, aliases);
+  }
+}
+
+function getVal(row, key) {
+  const c = colMap[key];
+  if (!c) return '';
+  return row[c] ?? '';
+}
+
+function getNum(row, key) {
+  const v = getVal(row, key);
+  if (v === '' || v === null || v === undefined) return 0;
+  return parseFloat(String(v).replace(/,/g,'')) || 0;
+}
+
+// ─── FILE INPUT ───────────────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') {
+    Papa.parse(file, { header:true, skipEmptyLines:true, complete: r => initData(r.data) });
+  } else {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const wb = XLSX.read(ev.target.result, {type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, {defval:''});
+      initData(data);
+    };
+    reader.readAsBinaryString(file);
+  }
+});
+
+// ─── SAMPLE DATA ─────────────────────────────────────────────────────
+function loadSampleData() {
+  const brands = ['Lavian','Panacea','Apex','MedCure'];
+  const parties = ['SHREE NATH JI DISTRIBUTORS','VISWAKARMA ENTERPRISES','KRISHNA TRADERS','GAUR JI MARKETING','SHARMA MEDICALS','GUPTA PHARMA','SINGH DISTRIBUTORS','RAJ ENTERPRISES'];
+  const products = ['N Donut Outlet Box','Vitamin C 500mg','Paracetamol 650','Antacid Syrup','Multivitamin Cap','Pain Relief Gel','Cough Syrup 100ml','Eye Drops 10ml'];
+  const buckets = ['FTD','LMTD','MTD'];
+  const months = ['Jan-26','Feb-26','Mar-26'];
+  const categories = ['URBAN','RURAL'];
+  const data = [];
+  for (let i = 0; i < 120; i++) {
+    const bkt = buckets[Math.floor(Math.random()*3)];
+    const mth = bkt === 'MTD' ? 'Mar-26' : bkt === 'LMTD' ? 'Feb-26' : months[Math.floor(Math.random()*3)];
+    const qty = Math.floor(Math.random()*10)+1;
+    const rate = 2200 + Math.floor(Math.random()*1000);
+    const saleAmt = qty * rate;
+    const profit = Math.floor(saleAmt * (0.04 + Math.random()*0.06));
+    const disc = Math.floor(saleAmt * (Math.random()*0.02));
+    data.push({
+      'Date': `${String(Math.floor(Math.random()*28)+1).padStart(2,'0')}-02-2026`,
+      'Month': mth,
+      'BUCKET': bkt,
+      'INV. NO.': `CFA/0${60+i}/25-26`,
+      'Party Name': parties[Math.floor(Math.random()*parties.length)],
+      'Category': categories[Math.floor(Math.random()*2)],
+      'Description of Goods': products[Math.floor(Math.random()*products.length)],
+      'Brand Name': brands[Math.floor(Math.random()*brands.length)],
+      'Quantity': qty,
+      'Rate': rate,
+      'Total Sale Amount': saleAmt,
+      'Profit Amount': profit,
+      'Disc. Amount': disc,
+      'Profit %': ((profit/saleAmt)*100).toFixed(1),
+    });
+  }
+  initData(data);
+}
+
+// ─── INIT DATA ────────────────────────────────────────────────────────
+function initData(data) {
+  allData = data;
+  if (!data.length) return;
+  mapColumns(Object.keys(data[0]));
+  document.getElementById('dataStatus').textContent = `${data.length} rows loaded ✓`;
+  document.getElementById('importNotice').style.display = 'none';
+  document.getElementById('dashboardContent').style.display = 'block';
+  buildBrandFilter();
+  buildMonthFilter();
+  applyFilters();
+}
+
+// ─── BRAND FILTER ─────────────────────────────────────────────────────
+function buildBrandFilter() {
+  const brands = [...new Set(allData.map(r => getVal(r,'brand')).filter(Boolean))].sort();
+  const bar = document.getElementById('brandBar');
+  bar.innerHTML = `<span class="brand-label">BRAND:</span>
+    <button class="brand-chip ${currentBrand==='ALL'?'active':''}" data-brand="ALL" onclick="selectBrand(this,'ALL')">ALL BRANDS</button>`;
+  brands.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'brand-chip' + (currentBrand===b?' active':'');
+    btn.textContent = b;
+    btn.onclick = function() { selectBrand(this, b); };
+    bar.appendChild(btn);
+  });
+}
+
+function selectBrand(el, brand) {
+  currentBrand = brand;
+  document.querySelectorAll('.brand-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  applyFilters();
+}
+
+// ─── MONTH FILTER ─────────────────────────────────────────────────────
+function buildMonthFilter() {
+  const months = [...new Set(allData.map(r => getVal(r,'month')).filter(Boolean))].sort();
+  const row = document.getElementById('monthRow');
+  row.innerHTML = `<button class="month-chip active" onclick="selectMonth(this,'ALL')">All Months</button>`;
+  months.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'month-chip';
+    btn.textContent = m;
+    btn.onclick = function() { selectMonth(this, m); };
+    row.appendChild(btn);
+  });
+}
+
+function selectMonth(el, month) {
+  currentMonth = month;
+  document.querySelectorAll('.month-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  applyFilters();
+}
+
+// ─── PERIOD TABS ──────────────────────────────────────────────────────
+function selectPeriod(el, period) {
+  currentPeriod = period;
+  document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  applyFilters();
+}
+
+// ─── FILTER ───────────────────────────────────────────────────────────
+function applyFilters() {
+  filteredData = allData.filter(r => {
+    const bkt = String(getVal(r,'bucket')||'').toUpperCase();
+    const brand = getVal(r,'brand');
+    const month = getVal(r,'month');
+    let periodOk = true;
+    if (currentPeriod !== 'ALL') {
+      if (currentPeriod === 'MTD') {
+        // MTD = current month data (not FTD/LMTD tagged rows) OR bucket = MTD
+        periodOk = bkt === 'MTD' || (!bkt.includes('FTD') && !bkt.includes('LMTD'));
+      } else {
+        periodOk = bkt.includes(currentPeriod);
+      }
+    }
+    const brandOk = currentBrand === 'ALL' || brand === currentBrand;
+    const monthOk = currentMonth === 'ALL' || month === currentMonth;
+    return periodOk && brandOk && monthOk;
+  });
+  renderDashboard();
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────
+const fmt = n => '₹' + Math.round(n).toLocaleString('en-IN');
+const fmtQ = n => Math.round(n).toLocaleString('en-IN');
+const pct = (a,b) => b ? ((a/b)*100).toFixed(1)+'%' : '0%';
+
+function renderDashboard() {
+  const data = filteredData;
+  const totalQty = data.reduce((s,r) => s+getNum(r,'qty'), 0);
+  const totalSale = data.reduce((s,r) => s+getNum(r,'saleAmt'), 0);
+  const totalProfit = data.reduce((s,r) => s+getNum(r,'profit'), 0);
+  const totalDisc = data.reduce((s,r) => s+getNum(r,'disc'), 0);
+  const margin = totalSale ? (totalProfit/totalSale*100).toFixed(1) : 0;
+  const parties = new Set(data.map(r=>getVal(r,'party'))).size;
+
+  // KPIs
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi-card k1"><div class="kpi-label">Total Sale</div><div class="kpi-value k1">${fmt(totalSale)}</div><div class="kpi-sub">${data.length} invoices</div></div>
+    <div class="kpi-card k2"><div class="kpi-label">Total Profit</div><div class="kpi-value k2">${fmt(totalProfit)}</div><div class="kpi-sub">Margin: ${margin}%</div></div>
+    <div class="kpi-card k3"><div class="kpi-label">Total Quantity</div><div class="kpi-value k3">${fmtQ(totalQty)}</div><div class="kpi-sub">Units/Cartons</div></div>
+    <div class="kpi-card k4"><div class="kpi-label">Disc. Amount</div><div class="kpi-value k4">${fmt(totalDisc)}</div><div class="kpi-sub">${totalSale ? ((totalDisc/totalSale)*100).toFixed(1) : 0}% of sale</div></div>
+    <div class="kpi-card k5"><div class="kpi-label">Active Parties</div><div class="kpi-value k5">${parties}</div><div class="kpi-sub">Unique customers</div></div>
+  `;
+
+  renderPartyTable(data);
+  renderProdTable(data);
+  renderBucketTable(data);
+  renderPartyBar(data);
+  renderProfitBar(data);
+  renderDonut(data);
+  renderRawTable(data);
+}
+
+function groupBy(data, keyFn) {
+  const map = {};
+  for (const r of data) {
+    const k = keyFn(r);
+    if (!map[k]) map[k] = [];
+    map[k].push(r);
+  }
+  return map;
+}
+
+function sumGroup(rows) {
+  return {
+    qty: rows.reduce((s,r)=>s+getNum(r,'qty'),0),
+    sale: rows.reduce((s,r)=>s+getNum(r,'saleAmt'),0),
+    profit: rows.reduce((s,r)=>s+getNum(r,'profit'),0),
+    disc: rows.reduce((s,r)=>s+getNum(r,'disc'),0),
+  };
+}
+
+function renderPartyTable(data) {
+  const grp = groupBy(data, r => getVal(r,'party'));
+  const rows = Object.entries(grp).map(([name,rows]) => ({name, ...sumGroup(rows)}))
+    .sort((a,b)=>b.sale-a.sale);
+  document.getElementById('partyCount').textContent = rows.length+' parties';
+  document.getElementById('partyBody').innerHTML = rows.map(r=>`
+    <tr>
+      <td class="name" title="${r.name}">${r.name||'Unknown'}</td>
+      <td class="num">${fmtQ(r.qty)}</td>
+      <td class="num">${fmt(r.sale)}</td>
+      <td class="num" style="color:var(--accent2)">${fmt(r.profit)}</td>
+      <td class="num" style="color:var(--accent4)">${fmt(r.disc)}</td>
+      <td class="num"><span class="pill ${r.sale&&r.profit/r.sale>.05?'pill-green':r.sale&&r.profit/r.sale>.02?'pill-yellow':'pill-red'}">${r.sale?((r.profit/r.sale)*100).toFixed(1):0}%</span></td>
+    </tr>`).join('');
+}
+
+function renderProdTable(data) {
+  const grp = groupBy(data, r => getVal(r,'product'));
+  const rows = Object.entries(grp).map(([name,rows]) => ({name, ...sumGroup(rows)}))
+    .sort((a,b)=>b.sale-a.sale);
+  document.getElementById('prodCount').textContent = rows.length+' products';
+  document.getElementById('prodBody').innerHTML = rows.map(r=>`
+    <tr>
+      <td class="name" title="${r.name}">${r.name||'Unknown'}</td>
+      <td class="num">${fmtQ(r.qty)}</td>
+      <td class="num">${fmt(r.sale)}</td>
+      <td class="num" style="color:var(--accent2)">${fmt(r.profit)}</td>
+      <td class="num" style="color:var(--accent4)">${fmt(r.disc)}</td>
+      <td class="num"><span class="pill ${r.sale&&r.profit/r.sale>.05?'pill-green':r.sale&&r.profit/r.sale>.02?'pill-yellow':'pill-red'}">${r.sale?((r.profit/r.sale)*100).toFixed(1):0}%</span></td>
+    </tr>`).join('');
+}
+
+function renderBucketTable(data) {
+  const grp = groupBy(data, r => (getVal(r,'bucket')||'Unknown').toUpperCase());
+  const rows = Object.entries(grp).map(([name,rows]) => ({name, ...sumGroup(rows)}))
+    .sort((a,b)=>b.sale-a.sale);
+  document.getElementById('bucketBody').innerHTML = rows.map(r=>`
+    <tr>
+      <td><span class="pill ${r.name==='MTD'?'pill-green':r.name==='FTD'?'pill-yellow':'pill-red'}">${r.name}</span></td>
+      <td class="num">${fmtQ(r.qty)}</td>
+      <td class="num">${fmt(r.sale)}</td>
+      <td class="num" style="color:var(--accent2)">${fmt(r.profit)}</td>
+      <td class="num">${r.sale?((r.profit/r.sale)*100).toFixed(1):0}%</td>
+    </tr>`).join('');
+}
+
+function renderPartyBar(data) {
+  const grp = groupBy(data, r => getVal(r,'party'));
+  const rows = Object.entries(grp).map(([name,rows])=>({name,...sumGroup(rows)}))
+    .sort((a,b)=>b.sale-a.sale).slice(0,8);
+  const max = rows[0]?.sale||1;
+  document.getElementById('partyBarChart').innerHTML = rows.map(r=>`
+    <div class="bar-row">
+      <div class="bar-row-label" title="${r.name}">${(r.name||'?').split(' ')[0]}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(r.sale/max*100).toFixed(1)}%;background:var(--accent)"></div></div>
+      <div class="bar-row-val">${fmt(r.sale)}</div>
+    </div>`).join('');
+}
+
+function renderProfitBar(data) {
+  const grp = groupBy(data, r => getVal(r,'product'));
+  const rows = Object.entries(grp).map(([name,rows])=>({name,...sumGroup(rows)}))
+    .sort((a,b)=>b.profit-a.profit).slice(0,8);
+  const max = rows[0]?.profit||1;
+  document.getElementById('profitBarChart').innerHTML = rows.map(r=>`
+    <div class="bar-row">
+      <div class="bar-row-label" title="${r.name}">${(r.name||'?').split(' ').slice(0,2).join(' ')}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(r.profit/max*100).toFixed(1)}%;background:var(--accent2)"></div></div>
+      <div class="bar-row-val">${fmt(r.profit)}</div>
+    </div>`).join('');
+}
+
+function renderDonut(data) {
+  const grp = groupBy(data, r => getVal(r,'brand'));
+  const rows = Object.entries(grp).map(([name,rows])=>({name,...sumGroup(rows)}))
+    .sort((a,b)=>b.sale-a.sale);
+  const total = rows.reduce((s,r)=>s+r.sale,0)||1;
+  const colors = ['#f59e0b','#10b981','#6366f1','#ef4444','#ec4899','#06b6d4'];
+  const r=45, cx=60, cy=60, circ=2*Math.PI*r;
+  let offset=0;
+  let paths='<circle cx="60" cy="60" r="45" fill="none" stroke="var(--border)" stroke-width="18"/>';
+  rows.forEach((row,i)=>{
+    const pct2 = row.sale/total;
+    const dash = pct2*circ;
+    paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[i%colors.length]}" stroke-width="18"
+      stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-offset+circ/4}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    offset += dash;
+  });
+  document.getElementById('donutSvg').innerHTML = paths + `<text x="60" y="65" text-anchor="middle" fill="var(--text)" font-size="10" font-family="DM Mono">${rows.length} Brands</text>`;
+  document.getElementById('donutLegend').innerHTML = rows.slice(0,6).map((r2,i)=>`
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${colors[i%colors.length]}"></div>
+      <span class="legend-name">${r2.name||'Unknown'}</span>
+      <span class="legend-pct">${((r2.sale/total)*100).toFixed(1)}%</span>
+    </div>`).join('');
+}
+
+function renderRawTable(data) {
+  if (!data.length) { document.getElementById('rawBody').innerHTML='<tr><td colspan="20" class="empty-state">No data</td></tr>'; return; }
+  const keys = Object.keys(data[0]);
+  document.getElementById('rawHead').innerHTML = '<tr>'+keys.map(k=>`<th>${k}</th>`).join('')+'</tr>';
+  document.getElementById('rowCount').textContent = data.length+' rows';
+  const shown = data.slice(0,200);
+  document.getElementById('rawBody').innerHTML = shown.map(r=>`<tr>${keys.map(k=>`<td style="white-space:nowrap">${r[k]??''}</td>`).join('')}</tr>`).join('');
+}
+</script>
+</body>
+</html>
